@@ -1,0 +1,242 @@
+{% extends "mapapp_gibbons/base.html" %}
+{% load tethys_gizmos %}
+
+{% block header_buttons %}
+  <div class="header-button glyphicon-button" data-toggle="tooltip" data-placement="bottom" title="Help">
+    <a data-toggle="modal" data-target="#help-modal"><span class="glyphicon glyphicon-question-sign"></span></a>
+  </div>
+{% endblock %}
+
+{% block app_content %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <style>
+        td {
+            text-align: center;
+        }
+
+        h3 {
+            color: black;
+        }
+
+        body {
+
+        }
+
+        .slidecontainer {
+            width: 100%;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 90%;
+            height: 5px;
+            border-radius: 5px;
+            background: #2C3E50;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: black;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #viewDiv {
+            height: 450px;
+        }
+
+        form {
+            margin: .5;
+        }
+
+        input[type=text] {
+            width: 100%;
+            padding: 5px 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        input[type=submit] {
+            border: 1;
+            display: inline-block;
+            font-size: 14px;
+            padding: 10px 30px;
+        }
+    </style>
+
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.6/esri/css/main.css">
+
+    <script src="https://js.arcgis.com/4.6/"></script>
+
+    <script type="text/javascript">
+        require([
+            "esri/Map",
+            "esri/layers/FeatureLayer",
+            "esri/layers/MapImageLayer",
+            "esri/views/MapView",
+            "dojo/dom",
+            "dojo/on",
+            "dojo/domReady!"
+            ], function(Map, FeatureLayer, MapImageLayer, MapView, dom, on){
+
+            var map = new Map ({
+                basemap: "streets",
+            });
+
+            var PTemplate = {
+                title: "AADT on Route {ROUTE}:",
+                content: "<li>MP: {START_ACCU} - {END_ACCUM}</li>" +
+                "<li>AADT (2016): {AADT2016}</li>"
+            };
+
+            var view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-111.658534, 40.233844],
+                zoom: 11.5
+            });
+
+            var utah_AADT = new FeatureLayer({
+                url: "http://geoserver2.byu.edu/arcgis/rest/services/Valor/AADT/FeatureServer",
+                outFields: ["*"],
+                popupTemplate: PTemplate,
+                id: "AADT"
+            });
+
+            var utah_dem_layer = MapImageLayer({
+                url: "http://geoserver2.byu.edu/arcgis/rest/services/Valor/Elevations/MapServer",
+                opacity: 0.5,
+                id: "DEM"
+            });
+
+
+            map.layers.add(utah_dem_layer);
+            map.add(utah_AADT);
+
+            // Create a variable referencing the checkbox node
+            var DEMLyrToggle = dom.byId("DEM");
+
+            // Listen to the onchange event for the checkbox
+            on(DEMLyrToggle, "change", function(){
+
+            // When the checkbox is checked (true), set the layer's visibility to true
+                utah_dem_layer.visible = DEMLyrToggle.checked;
+            });
+
+
+            var AADTLyrToggle = dom.byId("AADT");
+
+            // Listen to the onchange event for the checkbox
+            on(AADTLyrToggle, "change", function(){
+
+            // When the checkbox is checked (true), set the layer's visibility to true
+                utah_AADT.visible = AADTLyrToggle.checked;
+            });
+        });
+    </script>
+
+
+    <h1>MapView</h1>
+    <hr>
+    	<form>
+		<h3><b>Location Search:</b></h3>
+		<input type="text" name="search"> <input type="submit">
+	</form>
+
+	<br>
+
+	<span id="layerToggle1">
+	<input type="checkbox" id="DEM" checked>
+		"DEM"
+	</span>
+
+	<span id="layerToggle2">
+		<input type="checkbox" id="AADT" checked>
+		"AADT"
+	</span>
+
+	<br>
+    <br>
+
+	<div id="viewDiv"></div>
+
+    <table style="width:100%">
+		<tr>
+			<td width="33%">
+				<div class="slidecontainer">
+				  <h5>Vehicle Emissions Intensity:</h5>
+				  <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+				</div>
+				<br>
+			</td>
+            <td width = "10%">
+
+            </td>
+			<td colspan="2">
+				<div class="slidecontainer">
+				  <h5>Time of Day:</h5>
+				  <input type="range" min="0" max="24" value="12" class="slider" id="myRange">
+				</div>
+				<br>
+			</td>
+		</tr>
+	</table>
+
+
+{% endblock %}
+
+{# Use the after_app_content block for modals #}
+{% block after_app_content %}
+  <!-- Example Modal -->
+  <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="help-modal-label">Example Modal</h5>
+        </div>
+        <div class="modal-body">
+          <p>You can add custom buttons to the app header using the <code>header_buttons</code> block. Use anchor/link tags for the button and wrap it in a div with the class <code>header-button</code>. For buttons with the gliphyicons, add the <code>glyphicon-button</code> class as well.</p>
+          <p>Ever have trouble using a modal in a Tethys app? Use the <code>after_app_content</code> block for modal content to allow them to function properly. See: <a href="https://getbootstrap.com/javascript/#modals">Bootstrap Modals</a></p>
+          <p>Add tooltips to any element by adding the <code>data-toggle</code>, <code>data-placement</code>, and <code>title</code> attributes to the button. See: <a href="https://getbootstrap.com/javascript/#tooltips">Bootstrap Tooltips</a></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block app_actions %}
+
+{% endblock %}
